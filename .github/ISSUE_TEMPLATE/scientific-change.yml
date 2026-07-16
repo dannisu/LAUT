@@ -1,0 +1,26 @@
+name: Scientific framework change
+description: Propose a criterion, threshold, rank, mask, or reference change
+title: "[Framework]: "
+labels: [science, framework]
+body:
+  - type: input
+    id: criterion
+    attributes:
+      label: Criterion or rank
+      placeholder: O3_ITF_TOTAL / T3
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Scientific evidence
+      description: Include literature, hindcast period, data versions, masks, uncertainty, and expected decision impact.
+    validations:
+      required: true
+  - type: textarea
+    id: migration
+    attributes:
+      label: Proposed version and migration note
+    validations:
+      required: true
+

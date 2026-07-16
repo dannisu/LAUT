@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use LAUT, please cite this software and the evaluation framework sources."
+title: "LAUT: Local Assessment for Upper-ocean Tropical ocean processes"
+type: software
+version: 0.1.0
+date-released: 2026-07-16
+license: BSD-3-Clause
+repository-code: "https://github.com/dannisu/LAUT"
+keywords:
+  - regional ocean modelling
+  - Southeast Asia
+  - NEMO
+  - model evaluation
+

@@ -1,0 +1,29 @@
+# Copy this file and replace URIs with local paths or service endpoints.
+
+[[sources]]
+id = "control"
+driver = "netcdf"
+uri = "/path/to/control_grid_T_*.nc"
+description = "Current CCRS-NEMO-SEA configuration"
+variables = {sst = "sosstsst", sea_surface_salinity = "sosaline"}
+coordinates = {time = "time_counter", latitude = "nav_lat", longitude = "nav_lon"}
+open_options = {chunks = "auto"}
+
+[[sources]]
+id = "experiment"
+driver = "zarr"
+uri = "s3://bucket/experiment.zarr"
+description = "Candidate configuration"
+variables = {sst = "thetao", sea_surface_salinity = "so"}
+coordinates = {time = "time", latitude = "lat", longitude = "lon"}
+open_options = {consolidated = true}
+
+[[sources]]
+id = "ostia"
+driver = "opendap"
+uri = "https://replace-with-authorised-opendap-endpoint"
+description = "OSTIA reference; access and licensing remain the user's responsibility"
+variables = {sst = "analysed_sst"}
+coordinates = {time = "time", latitude = "lat", longitude = "lon"}
+offset = {sst = -273.15}
+

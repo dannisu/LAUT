@@ -1,0 +1,36 @@
+# A minimal manifest. Paths are resolved relative to this file.
+framework = "laut-sea-v0.1.0.toml"
+catalog = "catalog.example.toml"
+output_dir = "outputs/example"
+
+[[configurations]]
+id = "control"
+stage = "S4"
+mode = "forced"
+
+[[configurations]]
+id = "experiment"
+stage = "S4"
+mode = "forced"
+
+[[evaluations]]
+configuration = "control"
+criterion_id = "O2_SST_BIAS"
+model_source = "control"
+reference_source = "ostia"
+variable = "sst"
+alignment = "interp"
+
+[[evaluations]]
+configuration = "experiment"
+criterion_id = "O2_SST_BIAS"
+model_source = "experiment"
+reference_source = "ostia"
+variable = "sst"
+alignment = "interp"
+
+# Complex diagnostics can be computed externally and supplied directly.
+[[evaluations]]
+configuration = "experiment"
+criterion_id = "O3_ITF_TOTAL"
+value = 15.2

@@ -1,0 +1,753 @@
+[framework]
+name = "LAUT Southeast Asia regional-ocean evaluation framework"
+version = "0.1.0"
+status = "proposal"
+region = "Southeast Asia and western Maritime Continent"
+description = "Machine-readable implementation of ocean criteria O1-O10, staged testing S0-S4, and tuning priority T1-T7."
+minimum_acceptance_stage = "S4"
+calibration_required = true
+calibration_reference = "Existing 20-year CCRS-NEMO-SEA hindcast"
+threshold_note = "Values are literature-derived proposals until calibrated against the existing hindcast."
+
+[[stages]]
+id = "S0"
+name = "Barotropic, stratified, tide-only"
+duration = "1 to 2 weeks"
+purpose = "Geometry, bathymetry, open boundaries, and tidal dynamics"
+gate = "Completes; tidal harmonics reasonable; no boundary reflection"
+
+[[stages]]
+id = "S1"
+name = "Numerical stability check"
+duration = "2 months, full baroclinic"
+purpose = "CFL, blow-ups, spurious mixing, and energy behaviour"
+gate = "No blow-up, runaway kinetic energy, or grid-scale noise"
+
+[[stages]]
+id = "S2"
+name = "Annual cycle"
+duration = "1 year"
+purpose = "Monsoon reversal, seasonal MLD cycle, and seasonal ITF"
+gate = "Correct sign and approximate seasonal amplitude"
+
+[[stages]]
+id = "S3"
+name = "Spin-up (output discarded)"
+duration = "3 to 5 years from a soft restart; longer from rest"
+purpose = "Interior adjustment, ITF, and EKE saturation"
+gate = "Drift stabilising and ITF within O3 range"
+
+[[stages]]
+id = "S4"
+name = "Evaluation run"
+duration = "At least 20 years, for example 1995 to 2014"
+purpose = "Evaluate all criteria in O2 to O6"
+gate = "Only S4 output is eligible for acceptance"
+
+[[tuning_ranks]]
+id = "T1"
+name = "Surface fluxes and SST"
+rationale = "The atmosphere responds directly to SST; coupled criteria depend on it."
+parameters = ["namsbc_blk", "namtra_qsr", "namsbc_ssr", "ln_skin_cs", "ln_skin_wl"]
+diagnostics = ["SST bias", "SST RMSE", "SST pattern correlation", "marine heatwaves"]
+
+[[tuning_ranks]]
+id = "T2"
+name = "Vertical mixing, MLD, and thermocline depth"
+rationale = "Vertical structure controls SST response and upwelled-water temperature."
+parameters = ["namzdf_tke", "namzdf_gls", "rn_avt0", "rn_avm0", "ln_zdfiwm", "ln_lc"]
+diagnostics = ["MLD bias", "20 degC isotherm depth", "subsurface temperature bias"]
+
+[[tuning_ranks]]
+id = "T3"
+name = "ITF and strait transports"
+rationale = "The ITF sets the regional heat and freshwater budget."
+parameters = ["domain_cfg bathymetry and sill depths", "namdrg", "nambdy", "namtra_adv"]
+diagnostics = ["total ITF", "strait partitioning", "vertical structure", "seasonal cycle"]
+
+[[tuning_ranks]]
+id = "T4"
+name = "Sea-level gradients and tides"
+rationale = "SSH gradients determine currents; tides feed back into mixing."
+parameters = ["nam_tide", "namdyn_spg", "namdyn_hpg", "namdrg"]
+diagnostics = ["de-meaned SLA", "coastal sea level", "tidal amplitude and phase"]
+
+[[tuning_ranks]]
+id = "T5"
+name = "Salinity and stratification"
+rationale = "Salinity is first-order for stratification, the Sunda Shelf, and ITF water masses."
+parameters = ["namsbc_rnf", "rn_pfac", "namsbc_ssr", "namtra_ldf"]
+diagnostics = ["SSS bias", "SSS RMSE", "river plumes", "ITF outflow"]
+
+[[tuning_ranks]]
+id = "T6"
+name = "EKE and the mesoscale"
+rationale = "Regional value-add is interpretable only after T1 to T5 are credible."
+parameters = ["namdyn_ldf", "namdyn_vor", "namdyn_adv", "namlbc", "ln_ldfeiv"]
+diagnostics = ["EKE", "eddy census", "SSH spectra", "SST gradients"]
+
+[[tuning_ranks]]
+id = "T7"
+name = "Deep drift"
+rationale = "Deep drift is decisive for century-scale projections."
+parameters = ["namtra_dmp", "namzdf", "namtra_bbl", "nambdy"]
+diagnostics = ["deep temperature trend", "salinity trend", "steric drift", "heat budget"]
+
+# O2: mean state ---------------------------------------------------------------
+
+[[criteria]]
+id = "O2_SST_BIAS"
+section = "O2"
+rank = "T1"
+name = "Seasonal and annual SST domain bias"
+variable = "sst"
+metric = "bias"
+units = "degC"
+baseline = "observations"
+reference = "OSTIA or OISST"
+applicability = "forced"
+target = {operator = "abs_le", value = 0.5}
+threshold = {operator = "abs_le", value = 1.0}
+notes = "Local bias up to 2 degC is allowed only where documented and physically understood."
+
+[[criteria]]
+id = "O2_SST_RMSE"
+section = "O2"
+rank = "T1"
+name = "Seasonal and annual SST RMSE"
+variable = "sst"
+metric = "rmse"
+units = "degC"
+baseline = "observations"
+reference = "OSTIA or OISST"
+applicability = "forced"
+target = {operator = "le", value = 0.5}
+threshold = {operator = "le", value = 0.75}
+
+[[criteria]]
+id = "O2_SST_PCC"
+section = "O2"
+rank = "T1"
+name = "SST spatial-pattern correlation"
+variable = "sst"
+metric = "pattern_correlation"
+units = "1"
+baseline = "observations"
+reference = "OSTIA or OISST"
+target = {operator = "ge", value = 0.95}
+threshold = {operator = "ge", value = 0.90}
+
+[[criteria]]
+id = "O2_SUBSURFACE_TEMP_BIAS"
+section = "O2"
+rank = "T2"
+name = "Subsurface temperature bias, 0 to 500 m"
+variable = "subsurface_temperature"
+metric = "bias"
+units = "degC"
+baseline = "observations"
+reference = "EN4 and Argo"
+target = {operator = "abs_le", value = 0.5}
+threshold = {operator = "abs_le", value = 1.0}
+
+[[criteria]]
+id = "O2_THERMOCLINE_DEPTH_ERROR"
+section = "O2"
+rank = "T2"
+name = "20 degC isotherm depth error"
+variable = "thermocline_depth"
+metric = "absolute_error"
+units = "m"
+baseline = "observations"
+reference = "EN4 and Argo"
+target = {operator = "le", value = 10.0}
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_MLD_ABS_ERROR"
+section = "O2"
+rank = "T2"
+name = "Seasonal MLD absolute error"
+variable = "mixed_layer_depth"
+metric = "absolute_error"
+units = "m"
+baseline = "observations"
+reference = "EN4-derived climatology"
+group = "O2_MLD"
+group_rule = "any"
+target = {operator = "le", value = 10.0}
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_MLD_REL_ERROR"
+section = "O2"
+rank = "T2"
+name = "Seasonal MLD relative error"
+variable = "mixed_layer_depth"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "EN4-derived climatology"
+group = "O2_MLD"
+group_rule = "any"
+target = {operator = "le", value = 20.0}
+threshold = {operator = "le", value = 30.0}
+
+[[criteria]]
+id = "O2_SLA_RMSE"
+section = "O2"
+rank = "T4"
+name = "De-meaned sea-level anomaly RMSE"
+variable = "sea_level_anomaly"
+metric = "rmse"
+units = "cm"
+baseline = "observations"
+reference = "CMEMS altimetry SEALEVEL_GLO_PHY_L4_MY_008_047"
+target = {operator = "le", value = 4.0}
+threshold = {operator = "le", value = 6.0}
+
+[[criteria]]
+id = "O2_SLA_CORRELATION"
+section = "O2"
+rank = "T4"
+name = "De-meaned sea-level anomaly correlation"
+variable = "sea_level_anomaly"
+metric = "pattern_correlation"
+units = "1"
+baseline = "observations"
+reference = "CMEMS altimetry SEALEVEL_GLO_PHY_L4_MY_008_047"
+target = {operator = "ge", value = 0.8}
+threshold = {operator = "ge", value = 0.7}
+
+[[criteria]]
+id = "O2_COASTAL_SSH_RMSE"
+section = "O2"
+rank = "T4"
+name = "De-meaned coastal sea-level RMSE"
+variable = "coastal_sea_level"
+metric = "rmse"
+units = "cm"
+baseline = "observations"
+reference = "GESLA tide gauges"
+target = {operator = "le", value = 5.0}
+threshold = {operator = "le", value = 8.0}
+
+[[criteria]]
+id = "O2_COASTAL_SSH_CORRELATION"
+section = "O2"
+rank = "T4"
+name = "De-meaned coastal sea-level correlation"
+variable = "coastal_sea_level"
+metric = "pattern_correlation"
+units = "1"
+baseline = "observations"
+reference = "GESLA tide gauges"
+target = {operator = "ge", value = 0.8}
+threshold = {operator = "ge", value = 0.7}
+
+[[criteria]]
+id = "O2_SSS_BIAS"
+section = "O2"
+rank = "T5"
+name = "Sea-surface salinity domain bias"
+variable = "sea_surface_salinity"
+metric = "bias"
+units = "psu"
+baseline = "observations"
+reference = "EN4 and Argo"
+target = {operator = "abs_le", value = 0.2}
+threshold = {operator = "abs_le", value = 0.5}
+notes = "River plumes and ITF outflow must also be reported separately."
+
+[[criteria]]
+id = "O2_SSS_RMSE"
+section = "O2"
+rank = "T5"
+name = "Sea-surface salinity RMSE"
+variable = "sea_surface_salinity"
+metric = "rmse"
+units = "psu"
+baseline = "observations"
+reference = "EN4 and Argo"
+threshold = {operator = "le", value = 0.5}
+
+[[criteria]]
+id = "O2_EKE_FACTOR"
+section = "O2"
+rank = "T6"
+name = "Surface EKE domain-mean factor"
+variable = "surface_eke"
+metric = "factor_ratio"
+units = "ratio"
+baseline = "observations"
+reference = "CMEMS altimetry-derived EKE"
+target = {operator = "factor_within", value = 1.5}
+threshold = {operator = "factor_within", value = 2.0}
+
+[[criteria]]
+id = "O2_EKE_PCC"
+section = "O2"
+rank = "T6"
+name = "Surface EKE pattern correlation"
+variable = "surface_eke"
+metric = "pattern_correlation"
+units = "1"
+baseline = "observations"
+reference = "CMEMS altimetry-derived EKE"
+target = {operator = "ge", value = 0.7}
+threshold = {operator = "ge", value = 0.7}
+
+# Tidal constituents: the target is specified for M2; the threshold applies to all four.
+
+[[criteria]]
+id = "O2_TIDE_M2_AMPLITUDE_ERROR"
+section = "O2"
+rank = "T4"
+name = "M2 tidal-amplitude error"
+variable = "m2_amplitude"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+target = {operator = "le", value = 10.0}
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_TIDE_M2_PHASE_ERROR"
+section = "O2"
+rank = "T4"
+name = "M2 tidal-phase error"
+variable = "m2_phase_error"
+metric = "mean_value"
+units = "degree"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+target = {operator = "abs_le", value = 15.0}
+threshold = {operator = "abs_le", value = 30.0}
+
+[[criteria]]
+id = "O2_TIDE_S2_AMPLITUDE_ERROR"
+section = "O2"
+rank = "T4"
+name = "S2 tidal-amplitude error"
+variable = "s2_amplitude"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_TIDE_S2_PHASE_ERROR"
+section = "O2"
+rank = "T4"
+name = "S2 tidal-phase error"
+variable = "s2_phase_error"
+metric = "mean_value"
+units = "degree"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "abs_le", value = 30.0}
+
+[[criteria]]
+id = "O2_TIDE_K1_AMPLITUDE_ERROR"
+section = "O2"
+rank = "T4"
+name = "K1 tidal-amplitude error"
+variable = "k1_amplitude"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_TIDE_K1_PHASE_ERROR"
+section = "O2"
+rank = "T4"
+name = "K1 tidal-phase error"
+variable = "k1_phase_error"
+metric = "mean_value"
+units = "degree"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "abs_le", value = 30.0}
+
+[[criteria]]
+id = "O2_TIDE_O1_AMPLITUDE_ERROR"
+section = "O2"
+rank = "T4"
+name = "O1 tidal-amplitude error"
+variable = "o1_amplitude"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "le", value = 20.0}
+
+[[criteria]]
+id = "O2_TIDE_O1_PHASE_ERROR"
+section = "O2"
+rank = "T4"
+name = "O1 tidal-phase error"
+variable = "o1_phase_error"
+metric = "mean_value"
+units = "degree"
+baseline = "observations"
+reference = "GESLA tide-gauge harmonics"
+threshold = {operator = "abs_le", value = 30.0}
+
+# O3: Indonesian Throughflow ---------------------------------------------------
+
+[[criteria]]
+id = "O3_ITF_TOTAL"
+section = "O3"
+rank = "T3"
+name = "Total Indonesian Throughflow"
+variable = "itf_total"
+metric = "mean_value"
+units = "Sv"
+baseline = "observations"
+reference = "INSTANT mooring array"
+target = {operator = "between", value = [13.0, 18.0]}
+threshold = {operator = "between", value = [10.0, 20.0]}
+
+[[criteria]]
+id = "O3_MAKASSAR_SHARE"
+section = "O3"
+rank = "T3"
+name = "Makassar Strait share of total ITF"
+variable = "makassar_share"
+metric = "mean_value"
+units = "fraction"
+baseline = "observations"
+reference = "INSTANT mooring array"
+target = {operator = "between", value = [0.70, 0.85]}
+threshold = {operator = "between", value = [0.60, 0.90]}
+
+[[criteria]]
+id = "O3_LOMBOK_ERROR"
+section = "O3"
+rank = "T3"
+name = "Lombok Strait transport relative error"
+variable = "lombok_transport"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "INSTANT, about 2.6 Sv"
+target = {operator = "le", value = 30.0}
+threshold = {operator = "le", value = 50.0}
+
+[[criteria]]
+id = "O3_OMBAI_ERROR"
+section = "O3"
+rank = "T3"
+name = "Ombai Strait transport relative error"
+variable = "ombai_transport"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "INSTANT, about 4.9 Sv"
+target = {operator = "le", value = 30.0}
+threshold = {operator = "le", value = 50.0}
+
+[[criteria]]
+id = "O3_TIMOR_ERROR"
+section = "O3"
+rank = "T3"
+name = "Timor passage transport relative error"
+variable = "timor_transport"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "INSTANT, about 7.5 Sv"
+target = {operator = "le", value = 30.0}
+threshold = {operator = "le", value = 50.0}
+
+[[criteria]]
+id = "O3_CORE_LAYER"
+section = "O3"
+rank = "T3"
+name = "ITF transport maximum occurs in the correct subsurface layer"
+variable = "itf_core_layer_ok"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "observations"
+reference = "INSTANT, core at about 100 to 150 m"
+target = {operator = "eq", value = 1.0}
+threshold = {operator = "eq", value = 1.0}
+notes = "Also report whether the depth of maximum is within 25 m of the observed core."
+
+[[criteria]]
+id = "O3_SEASONAL_SIGN"
+section = "O3"
+rank = "T3"
+name = "ITF seasonal cycle has the correct sign and JJA maximum"
+variable = "itf_seasonal_sign_ok"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "observations"
+reference = "INSTANT mooring array"
+target = {operator = "eq", value = 1.0}
+threshold = {operator = "eq", value = 1.0}
+
+[[criteria]]
+id = "O3_ENSO_SIGN"
+section = "O3"
+rank = "T3"
+name = "ITF weakens during El Nino"
+variable = "itf_enso_sign_ok"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "observations"
+reference = "INSTANT and ENSO index"
+target = {operator = "eq", value = 1.0}
+threshold = {operator = "eq", value = 1.0}
+
+# O4: marine heatwaves ---------------------------------------------------------
+
+[[criteria]]
+id = "O4_MHW_FIXED_INTENSITY_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW intensity-bias degradation, fixed climatology"
+variable = "mhw_fixed_intensity_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), 30-year fixed climatology"
+threshold = {operator = "le", value = 0.10}
+
+[[criteria]]
+id = "O4_MHW_FIXED_DURATION_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW duration-bias degradation, fixed climatology"
+variable = "mhw_fixed_duration_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), 30-year fixed climatology"
+threshold = {operator = "le", value = 0.10}
+
+[[criteria]]
+id = "O4_MHW_FIXED_FREQUENCY_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW frequency-bias degradation, fixed climatology"
+variable = "mhw_fixed_frequency_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), 30-year fixed climatology"
+threshold = {operator = "le", value = 0.10}
+
+[[criteria]]
+id = "O4_MHW_MOVING_INTENSITY_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW intensity-bias degradation, moving climatology"
+variable = "mhw_moving_intensity_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), moving climatology sensitivity"
+threshold = {operator = "le", value = 0.10}
+
+[[criteria]]
+id = "O4_MHW_MOVING_DURATION_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW duration-bias degradation, moving climatology"
+variable = "mhw_moving_duration_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), moving climatology sensitivity"
+threshold = {operator = "le", value = 0.10}
+
+[[criteria]]
+id = "O4_MHW_MOVING_FREQUENCY_DEGRADATION"
+section = "O4"
+rank = "T1"
+name = "MHW frequency-bias degradation, moving climatology"
+variable = "mhw_moving_frequency_degradation"
+metric = "mean_value"
+units = "fraction"
+baseline = "previous_configuration"
+reference = "Hobday et al. (2016), moving climatology sensitivity"
+threshold = {operator = "le", value = 0.10}
+
+# O5: value-add over the parent ------------------------------------------------
+
+[[criteria]]
+id = "O5_SSH_SPECTRAL_SKILL"
+section = "O5"
+rank = "T6"
+name = "Added SSH spectral skill in the 30 to 200 km band"
+variable = "ssh_spectrum"
+metric = "mse_skill_score"
+units = "1"
+baseline = "parent_model"
+reference = "Along-track altimetry"
+threshold = {operator = "gt", value = 0.0}
+
+[[criteria]]
+id = "O5_SST_GRADIENT_SKILL"
+section = "O5"
+rank = "T6"
+name = "Added SST-gradient skill in the 30 to 200 km band"
+variable = "sst_gradient"
+metric = "mse_skill_score"
+units = "1"
+baseline = "parent_model"
+reference = "OSTIA or OISST"
+threshold = {operator = "gt", value = 0.0}
+
+[[criteria]]
+id = "O5_SPECTRAL_SLOPE_OK"
+section = "O5"
+rank = "T6"
+name = "Mesoscale spectral slope is no steeper than observed"
+variable = "spectral_slope_ok"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "observations"
+reference = "Along-track altimetry"
+threshold = {operator = "eq", value = 1.0}
+
+[[criteria]]
+id = "O5_EDDY_COUNT_ERROR"
+section = "O5"
+rank = "T6"
+name = "Mesoscale eddy-count relative error"
+variable = "eddy_count"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "Altimetry, same automated tracker"
+threshold = {operator = "le", value = 30.0}
+
+[[criteria]]
+id = "O5_EDDY_RADIUS_ERROR"
+section = "O5"
+rank = "T6"
+name = "Mesoscale mean-eddy-radius relative error"
+variable = "eddy_radius"
+metric = "relative_error_percent"
+units = "percent"
+baseline = "observations"
+reference = "Altimetry, same automated tracker"
+threshold = {operator = "le", value = 30.0}
+
+[[criteria]]
+id = "O5_TIDAL_MIXING_FACTOR"
+section = "O5"
+rank = "T6"
+name = "Indonesian-straits tidal mixing magnitude"
+variable = "tidal_mixing"
+metric = "factor_ratio"
+units = "ratio"
+baseline = "observations"
+reference = "Local observational estimate"
+threshold = {operator = "factor_within", value = 2.0}
+
+[[criteria]]
+id = "O5_JAVA_SUMATRA_UPWELLING_FACTOR"
+section = "O5"
+rank = "T6"
+name = "South Java and west Sumatra upwelling magnitude"
+variable = "java_sumatra_upwelling"
+metric = "factor_ratio"
+units = "ratio"
+baseline = "observations"
+reference = "Local observational estimate"
+threshold = {operator = "factor_within", value = 2.0}
+
+[[criteria]]
+id = "O5_SUNDA_SHELF_PROCESS_FACTOR"
+section = "O5"
+rank = "T6"
+name = "Shallow Sunda Shelf process magnitude"
+variable = "sunda_shelf_process"
+metric = "factor_ratio"
+units = "ratio"
+baseline = "observations"
+reference = "Local observational estimate"
+threshold = {operator = "factor_within", value = 2.0}
+
+[[criteria]]
+id = "O5_MEAN_STATE_NOT_DEGRADED"
+section = "O5"
+rank = "T6"
+name = "Mean state is not degraded while adding fine-scale skill"
+variable = "mean_state_not_degraded"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "previous_configuration"
+reference = "O2 scorecard"
+threshold = {operator = "eq", value = 1.0}
+
+# O6: drift control ------------------------------------------------------------
+
+[[criteria]]
+id = "O6_DEEP_TEMPERATURE_TREND"
+section = "O6"
+rank = "T7"
+name = "Deep-temperature trend below 1000 m over the last decade"
+variable = "deep_temperature_trend"
+metric = "mean_value"
+units = "degC per decade"
+baseline = "run_over_time"
+reference = "Stable-climate control"
+threshold = {operator = "abs_le", value = 0.05}
+
+[[criteria]]
+id = "O6_SALINITY_TREND"
+section = "O6"
+rank = "T7"
+name = "Domain-mean salinity trend over the last decade"
+variable = "salinity_trend"
+metric = "mean_value"
+units = "psu per decade"
+baseline = "run_over_time"
+reference = "Stable-climate control"
+threshold = {operator = "abs_le", value = 0.02}
+
+[[criteria]]
+id = "O6_STERIC_DRIFT_ATTRIBUTED"
+section = "O6"
+rank = "T7"
+name = "Steric drift is reported and attributed"
+variable = "steric_drift_attributed"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "run_over_time"
+reference = "Surface and lateral-boundary heat/salt budget"
+threshold = {operator = "eq", value = 1.0}
+
+[[criteria]]
+id = "O6_NET_SURFACE_HEAT_FLUX"
+section = "O6"
+rank = "T7"
+name = "Domain-mean net surface heat flux"
+variable = "net_surface_heat_flux"
+metric = "mean_value"
+units = "W m-2"
+baseline = "run_over_time"
+reference = "Forced hindcast and boundary heat convergence"
+applicability = "forced"
+threshold = {operator = "abs_le", value = 2.0}
+
+[[criteria]]
+id = "O6_HEAT_BUDGET_CLOSED"
+section = "O6"
+rank = "T7"
+name = "Regional heat budget is closed"
+variable = "heat_budget_closed"
+metric = "manual_boolean"
+units = "boolean"
+baseline = "run_over_time"
+reference = "Surface flux plus boundary convergence"
+threshold = {operator = "eq", value = 1.0}
+
