@@ -51,6 +51,13 @@ outputs/demo/
 └── summary.md
 ```
 
+For a collaborator walkthrough of the repository layers, the current
+implementation, and the planned COAsT integration, see
+[`docs/architecture.md`](docs/architecture.md). The synthetic run is suitable
+for demonstrating the evaluation and ranking flow; it does not represent an
+observation-backed model assessment or yet generate the full H/M/L application
+scorecard shown in the concept image.
+
 To evaluate diagnostics already calculated by another workflow:
 
 ```console
